@@ -1,3 +1,12 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+
+.scale-marker svg {
+  scale: 1.25;
+}
+
+.mapboxgl-marker svg {
+  transform-origin: bottom;
+  transition: scale 0.2s;
+}
