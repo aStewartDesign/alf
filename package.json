@@ -43,5 +43,11 @@
     "@tailwindcss/typography": "^0.5.15",
     "daisyui": "^4.12.23",
     "mapbox-gl": "^3.9.1"
+  },
+  "volta": {
+    "node": "20.17.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
