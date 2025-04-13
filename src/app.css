@@ -10,3 +10,9 @@
   transform-origin: bottom;
   transition: scale 0.2s;
 }
+
+.offscreen {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+}
