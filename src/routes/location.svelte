@@ -12,6 +12,21 @@
 
   const { map, data, deleteLocation, saveLabel }: Props = $props();
 
+  const makePopupHtml = (label: string) => {
+    const dom = document.createElement('div');
+    dom.className = 'flex flex-row';
+    const elLabel = document.createElement('p');
+    elLabel.className = 'text-zinc-800 text-lg font-medium mr-2';
+    elLabel.innerText = label;
+    dom.appendChild(elLabel);
+    const elDelete = document.createElement('button');
+    elDelete.className = 'btn btn-xs btn-link';
+    elDelete.innerText = 'Delete';
+    elDelete.setAttribute('data-location-id', data.id);
+    dom.appendChild(elDelete);
+    return dom.outerHTML;
+  };
+
   class Location {
     private _marker: Marker | null = null;
     public get marker() {
@@ -47,7 +62,8 @@
     };
 
     readonly setMarker = () => {
-      const popup = new mapboxgl.Popup().setText(location.label);
+      const popup = new mapboxgl.Popup().setHTML(makePopupHtml(location.label));
+      popup.on('open', () => popup.setHTML(makePopupHtml(location.label)));
       this._marker = new mapboxgl.Marker({
         className: 'location-marker',
       })

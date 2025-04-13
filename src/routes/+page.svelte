@@ -10,20 +10,33 @@
   import {
     parseLongLat,
     type ILocationData,
+    type ISerializedLocationData,
     type LocationsData,
   } from './utilities';
   import Location from './location.svelte';
+  import { v4 as uuid } from 'uuid';
 
   const queryParamDataKey = 'd';
 
   const encodeParam = (data: LocationsData) => {
-    let encoded = btoa(JSON.stringify(data));
+    // Remove the ids from the data before encoding
+    const serializedData: ISerializedLocationData[] = data.map(
+      ({ lng, lat, label }) => ({ lng, lat, label }),
+    );
+    let encoded = btoa(JSON.stringify(serializedData));
     return encodeURIComponent(encoded);
   };
   const decodeParam = (data: string): LocationsData => {
     try {
       return data
-        ? (JSON.parse(atob(decodeURIComponent(data))) as LocationsData)
+        ? (
+            JSON.parse(
+              atob(decodeURIComponent(data)),
+            ) as ISerializedLocationData[]
+          ).map((data) => ({
+            ...data,
+            id: uuid(),
+          }))
         : [];
     } catch (e) {
       console.error('Error decoding param:', e);
@@ -41,6 +54,15 @@
   let averageLocationMarker: Marker | null = null;
   let addLocationMarker: Marker | null = $state(null);
   let isDrawerOpen = $state(false);
+
+  const handleLocationDelete = (e: MouseEvent) => {
+    let id = (e.target as Element)
+      .closest('[data-location-id]')
+      ?.getAttribute('data-location-id');
+    if (id) {
+      removeLocation(id);
+    }
+  };
 
   onMount(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -60,6 +82,8 @@
     map.on('click', onMapClick);
 
     hasGeolocation = 'geolocation' in window.navigator;
+
+    document.addEventListener('click', handleLocationDelete);
   });
 
   onDestroy(() => {
@@ -67,6 +91,7 @@
       map.off('click', onMapClick);
       map.remove();
     }
+    document.removeEventListener('click', handleLocationDelete);
   });
 
   const averageLocation = $derived.by(() => {
@@ -159,12 +184,12 @@
   };
 
   const addLocation = (lng: number, lat: number) => {
-    locationsData.push({ lng, lat, label: '' });
+    locationsData.push({ lng, lat, label: '', id: uuid() });
     persistToQueryString();
   };
 
-  const removeLocation = (data: ILocationData) => {
-    let idx = locationsData.findIndex((d) => d === data);
+  const removeLocation = (id: string) => {
+    let idx = locationsData.findIndex((d) => d.id === id);
     locationsData.splice(idx, 1);
     persistToQueryString();
   };
@@ -255,7 +280,7 @@
             <Location
               {map}
               {data}
-              deleteLocation={() => removeLocation(data)}
+              deleteLocation={() => removeLocation(data.id)}
               saveLabel={(label: string) => updateLocationLabel(data, label)}
             />
           {/each}

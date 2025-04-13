@@ -1,7 +1,10 @@
-export interface ILocationData {
-  lng: number;
+export interface ISerializedLocationData {
   lat: number;
+  lng: number;
   label: string;
+}
+export interface ILocationData extends ISerializedLocationData {
+  id: string;
 }
 export type LocationsData = Array<ILocationData>;
 
