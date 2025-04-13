@@ -15,6 +15,7 @@
   } from './utilities';
   import Location from './location.svelte';
   import { v4 as uuid } from 'uuid';
+  import { browser } from '$app/environment';
 
   const queryParamDataKey = 'd';
 
@@ -55,12 +56,20 @@
   let addLocationMarker: Marker | null = $state(null);
   let isDrawerOpen = $state(false);
 
-  const handleLocationDelete = (e: MouseEvent) => {
+  const onDocumentClick = (e: MouseEvent) => {
     let id = (e.target as Element)
       .closest('[data-location-id]')
       ?.getAttribute('data-location-id');
     if (id) {
       removeLocation(id);
+      return;
+    }
+    if ((e.target as Element).closest('[data-average-location]')) {
+      navigator.share({
+        title: 'Average Location',
+        text: 'Check out our average location!',
+        url: location.href,
+      });
     }
   };
 
@@ -83,7 +92,7 @@
 
     hasGeolocation = 'geolocation' in window.navigator;
 
-    document.addEventListener('click', handleLocationDelete);
+    document.addEventListener('click', onDocumentClick);
   });
 
   onDestroy(() => {
@@ -91,7 +100,9 @@
       map.off('click', onMapClick);
       map.remove();
     }
-    document.removeEventListener('click', handleLocationDelete);
+    if (browser) {
+      document.removeEventListener('click', onDocumentClick);
+    }
   });
 
   const averageLocation = $derived.by(() => {
@@ -127,6 +138,21 @@
     };
   });
 
+  const makePopupHtml = (label: string) => {
+    const dom = document.createElement('div');
+    dom.className = 'flex flex-row';
+    const elLabel = document.createElement('p');
+    elLabel.className = 'text-zinc-800 text-lg font-medium mr-2';
+    elLabel.innerText = label;
+    dom.appendChild(elLabel);
+    const elBtn = document.createElement('button');
+    elBtn.className = 'btn btn-xs btn-link';
+    elBtn.innerText = 'Share';
+    elBtn.setAttribute('data-average-location', 'true');
+    dom.appendChild(elBtn);
+    return dom.outerHTML;
+  };
+
   $effect(() => {
     if (!map) {
       return;
@@ -142,8 +168,8 @@
       return;
     }
     let { long, lat, bounds } = averageLocation;
-    const popup = new mapboxgl.Popup().setText(
-      `Average Location: ${lat}, ${long}`,
+    const popup = new mapboxgl.Popup().setHTML(
+      makePopupHtml(`Average Location: ${lat}, ${long}`),
     );
     averageLocationMarker = new mapboxgl.Marker({
       className: 'average-location-marker',
