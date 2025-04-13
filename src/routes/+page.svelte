@@ -117,8 +117,15 @@
       return;
     }
     let { long, lat, bounds } = averageLocation;
-    averageLocationMarker = new mapboxgl.Marker({ color: '#C00' })
+    const popup = new mapboxgl.Popup().setText(
+      `Average Location: ${lat}, ${long}`,
+    );
+    averageLocationMarker = new mapboxgl.Marker({
+      className: 'average-location-marker',
+      color: '#C00',
+    })
       .setLngLat([long, lat])
+      .setPopup(popup)
       .addTo(map);
     map.setCenter([long, lat]);
     map.fitBounds([bounds.west, bounds.south, bounds.east, bounds.north], {
@@ -127,19 +134,21 @@
   });
 
   const onMapClick = (e: MapMouseEvent) => {
+    let target = e.originalEvent.target as Element;
     if (addLocationMarker) {
-      let target = e.originalEvent.target;
       if (
-        target instanceof Element &&
         target.closest('.add-location-marker') ===
-          addLocationMarker.getElement()
+        addLocationMarker.getElement()
       ) {
         let coords = addLocationMarker.getLngLat();
         addLocation(coords.lng, coords.lat);
       }
       addLocationMarker.remove();
       addLocationMarker = null;
-    } else {
+    }
+    // Only add the add location marker if the click did not happen on a
+    // location marker.
+    else if (!target.closest('.location-marker, .average-location-marker')) {
       addLocationMarker = new mapboxgl.Marker({
         color: '#0C0',
         className: 'add-location-marker',
@@ -211,7 +220,7 @@
       ]}
     >
       <button
-        class="btn absolute right-[-40px] rounded-l-none"
+        class="btn absolute right-[-39px] rounded-l-none"
         onclick={() => (isDrawerOpen = !isDrawerOpen)}
       >
         {#if isDrawerOpen}

@@ -34,17 +34,25 @@
 
     private customLabel = $state('');
 
-    readonly label = $derived(this.customLabel || `${this.lat}, ${this.lng}`);
-
     public isEditingLabel = $state(false);
+
+    readonly label = $derived(
+      this.isEditingLabel
+        ? this.customLabel
+        : this.customLabel || `${this.lat}, ${this.lng}`,
+    );
 
     readonly setCustomLabel = (label: string) => {
       this.customLabel = label;
     };
 
     readonly setMarker = () => {
-      this._marker = new mapboxgl.Marker()
+      const popup = new mapboxgl.Popup().setText(location.label);
+      this._marker = new mapboxgl.Marker({
+        className: 'location-marker',
+      })
         .setLngLat([this.lng, this.lat])
+        .setPopup(popup)
         .addTo(map);
     };
   }
@@ -60,8 +68,9 @@
     location.marker?.remove();
   });
 
-  const takeFocus = (el: HTMLElement) => {
+  const takeFocus = (el: HTMLInputElement) => {
     el.focus();
+    el.select();
   };
 
   const onLabelKeypress = (event: KeyboardEvent) => {
