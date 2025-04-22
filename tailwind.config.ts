@@ -10,7 +10,7 @@ export default {
   theme: {
     extend: {
       gridTemplateRows: {
-        layout: 'auto 1fr',
+        layout: '1fr',
       },
     },
   },

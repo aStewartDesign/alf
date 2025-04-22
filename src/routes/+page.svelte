@@ -1,21 +1,22 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import mapboxgl, {
-    type Map,
-    type Marker,
-    type MapMouseEvent,
-  } from 'mapbox-gl';
+  import mapboxgl, { type Map, type MapMouseEvent } from 'mapbox-gl';
   import 'mapbox-gl/dist/mapbox-gl.css';
   import { goto } from '$app/navigation';
-  import {
-    parseLongLat,
-    type ILocationData,
-    type ISerializedLocationData,
-    type LocationsData,
-  } from './utilities';
-  import Location from './location.svelte';
+  import { parseLngLat, roundLatLng } from '$lib/utilities';
+  import type {
+    ILocation,
+    ILocationData,
+    ISerializedLocationData,
+    LocationsData,
+  } from '$lib/types';
   import { v4 as uuid } from 'uuid';
   import { browser } from '$app/environment';
+  import Location from '$lib/components/location.svelte';
+  import Icon from '$lib/components/icon.svelte';
+  import type { IAverageLocation } from '$lib/types';
+  import AverageMarker from '$lib/components/average-marker.svelte';
+  import AddMarker from '$lib/components/add-marker.svelte';
 
   const queryParamDataKey = 'd';
 
@@ -52,9 +53,8 @@
   let hasGeolocation = $state(false);
   let input = $state('');
   let isValidInput = $state(false);
-  let averageLocationMarker: Marker | null = null;
-  let addLocationMarker: Marker | null = $state(null);
   let isDrawerOpen = $state(false);
+  let addLocationCoords: ILocation | null = $state(null);
 
   const onDocumentClick = (e: MouseEvent) => {
     let id = (e.target as Element)
@@ -105,7 +105,7 @@
     }
   });
 
-  const averageLocation = $derived.by(() => {
+  const averageLocation = $derived.by<IAverageLocation | null>(() => {
     if (locationsData.length < 2) {
       return null;
     }
@@ -127,7 +127,7 @@
     });
 
     return {
-      long: long / locationsData.length,
+      lng: long / locationsData.length,
       lat: lat / locationsData.length,
       bounds: {
         west,
@@ -138,85 +138,42 @@
     };
   });
 
-  const makePopupHtml = (label: string) => {
-    const dom = document.createElement('div');
-    dom.className = 'flex flex-row';
-    const elLabel = document.createElement('p');
-    elLabel.className = 'text-zinc-800 text-lg font-medium mr-2';
-    elLabel.innerText = label;
-    dom.appendChild(elLabel);
-    const elBtn = document.createElement('button');
-    elBtn.className = 'btn btn-xs btn-link';
-    elBtn.innerText = 'Share';
-    elBtn.setAttribute('data-average-location', 'true');
-    dom.appendChild(elBtn);
-    return dom.outerHTML;
-  };
-
-  $effect(() => {
-    if (!map) {
-      return;
-    }
-    if (averageLocationMarker) {
-      averageLocationMarker.remove();
-    }
-    if (!averageLocation) {
-      if (locationsData.length === 1) {
-        map.setCenter(locationsData[0]);
-        map.setZoom(9);
-      }
-      return;
-    }
-    let { long, lat, bounds } = averageLocation;
-    const popup = new mapboxgl.Popup().setHTML(
-      makePopupHtml(`Average Location: ${lat}, ${long}`),
-    );
-    averageLocationMarker = new mapboxgl.Marker({
-      className: 'average-location-marker',
-      color: '#C00',
-    })
-      .setLngLat([long, lat])
-      .setPopup(popup)
-      .addTo(map);
-    map.setCenter([long, lat]);
-    map.fitBounds([bounds.west, bounds.south, bounds.east, bounds.north], {
-      padding: 40,
-    });
-  });
-
   const onMapClick = (e: MapMouseEvent) => {
     let target = e.originalEvent.target as Element;
-    if (addLocationMarker) {
-      if (
-        target.closest('.add-location-marker') ===
-        addLocationMarker.getElement()
-      ) {
-        let coords = addLocationMarker.getLngLat();
-        addLocation(coords.lng, coords.lat);
-      }
-      addLocationMarker.remove();
-      addLocationMarker = null;
-    }
     // Only add the add location marker if the click did not happen on a
     // location marker.
-    else if (!target.closest('.location-marker, .average-location-marker')) {
-      addLocationMarker = new mapboxgl.Marker({
-        color: '#0C0',
-        className: 'add-location-marker',
-      })
-        .setLngLat(e.lngLat)
-        .addTo(map!);
+    if (!target.closest('.add-marker, .location-marker, .average-marker')) {
+      if (addLocationCoords) {
+        addLocationCoords = null;
+      } else {
+        addLocationCoords = {
+          lng: e.lngLat.lng,
+          lat: e.lngLat.lat,
+        };
+      }
+    } else {
+      addLocationCoords = null;
     }
   };
 
-  const addLocation = (lng: number, lat: number) => {
-    locationsData.push({ lng, lat, label: '', id: uuid() });
+  const addLocation = (coords: ILocation) => {
+    locationsData.push({ ...coords, label: '', id: uuid() });
+    console.log('addLocation locationData:', [...locationsData]);
     persistToQueryString();
+  };
+
+  const onAddMarkerClick = (coords: ILocation) => {
+    console.log('onAddMarkerClick', coords);
+    addLocation(coords);
+    addLocationCoords = null;
   };
 
   const removeLocation = (id: string) => {
     let idx = locationsData.findIndex((d) => d.id === id);
     locationsData.splice(idx, 1);
+    console.log(`removeLocation id: "${id}" idx: ${idx} locationData:`, [
+      ...locationsData,
+    ]);
     persistToQueryString();
   };
 
@@ -228,21 +185,49 @@
     }
   };
 
+  const clearAllLocations = () => {
+    locationsData.splice(0, locationsData.length);
+    persistToQueryString();
+  };
+
   const onUseMyLocation = () => {
     window.navigator.geolocation.getCurrentPosition((position) => {
-      addLocation(position.coords.longitude, position.coords.latitude);
+      const coords = {
+        lng: position.coords.longitude,
+        lat: position.coords.latitude,
+      };
+      addLocation(coords);
+      map?.setCenter(coords);
+      map?.setZoom(9);
     });
   };
 
+  const onViewAllLocations = (data: IAverageLocation) => {
+    if (map) {
+      const { bounds } = data;
+      map.setCenter(data);
+      map.fitBounds([bounds.west, bounds.south, bounds.east, bounds.north], {
+        padding: 80,
+      });
+    }
+  };
+
+  const onGoToAverageLocation = (data: IAverageLocation) => {
+    if (map) {
+      map.setCenter(data);
+      map.setZoom(9);
+    }
+  };
+
   const setInput = (val: string) => {
-    isValidInput = Boolean(parseLongLat(val));
+    isValidInput = Boolean(parseLngLat(val));
     input = val;
   };
 
   const onAddLocation = () => {
-    const { long, lat } = parseLongLat(input) || {};
-    if (long && lat) {
-      addLocation(long, lat);
+    const coords = parseLngLat(input);
+    if (coords) {
+      addLocation(coords);
       input = '';
     }
   };
@@ -255,68 +240,112 @@
 </script>
 
 <div class="grid h-screen w-screen grid-cols-6 grid-rows-layout">
-  <div class="col-span-6 p-4">
-    <h1 class="text-2xl font-bold">
-      Welcome to <abbr title="Average Location Finder">A.L.F.</abbr>
-    </h1>
-  </div>
   <div class="relative col-span-full h-full">
     <div
       class={[
         'shadow-md, absolute z-[1] h-full bg-base-100',
+        'w-[80vw] p-4 sm:w-[60vw] md:w-[50vw] lg:w-[30vw] 2xl:w-[20vw]',
         isDrawerOpen
-          ? 'w-[80%] sm:w-[60%] md:w-[50%] lg:w-[30%] 2xl:w-[20%]'
-          : 'w-0',
-        'p-4',
+          ? 'left-0'
+          : 'left-[-80vw] sm:left-[-60vw] md:left-[-50vw] lg:left-[-30vw] 2xl:left-[-20vw]',
       ]}
     >
       <button
-        class="btn absolute right-[-39px] rounded-l-none"
+        class="btn absolute right-[-66px] mt-4 rounded-l-none"
         onclick={() => (isDrawerOpen = !isDrawerOpen)}
+        aria-label="Toggle menu"
       >
-        {#if isDrawerOpen}
-          &lsaquo;
-        {:else}
-          &rsaquo;
-        {/if}
+        <Icon name="hamburger" />
       </button>
-      <div class={isDrawerOpen ? '' : 'offscreen'}>
-        <div class="join w-full pb-2">
-          <input
-            type="text"
-            class="input join-item input-bordered grow"
-            placeholder="Latitude, Longitude"
-            bind:value={() => input, setInput}
-          />
-          <button
-            class="btn join-item"
-            disabled={!isValidInput}
-            onclick={onAddLocation}
-          >
-            Add
-          </button>
-        </div>
-        {#if hasGeolocation}
-          <button class="btn" onclick={onUseMyLocation}>
-            Use my location
-          </button>
-        {/if}
-        {#if map}
-          {#each locationsData as data}
-            <Location
-              {map}
-              {data}
-              deleteLocation={() => removeLocation(data.id)}
-              saveLabel={(label: string) => updateLocationLabel(data, label)}
+      <div class="flex h-full flex-col justify-between">
+        <div>
+          <div class="join w-full pb-2">
+            <input
+              type="text"
+              class="input join-item input-bordered grow"
+              placeholder="Latitude, Longitude"
+              bind:value={() => input, setInput}
             />
-          {/each}
-        {/if}
-        {#if averageLocation}
-          <div class="mb-2 flex flex-row rounded-md bg-slate-500 p-4">
-            <h2 class="text-lg font-bold">Average Location:</h2>
-            <p>{averageLocation.lat}, {averageLocation.long}</p>
+            <button
+              class="btn join-item"
+              disabled={!isValidInput}
+              onclick={onAddLocation}
+            >
+              Add
+            </button>
           </div>
-        {/if}
+          {#if map}
+            {#each locationsData as data (data.id)}
+              <Location
+                {map}
+                {data}
+                deleteLocation={(id) => removeLocation(id)}
+                saveLabel={(label: string) => updateLocationLabel(data, label)}
+              />
+            {/each}
+
+            {#if addLocationCoords}
+              <AddMarker
+                {map}
+                data={addLocationCoords}
+                onClick={onAddMarkerClick}
+              />
+            {/if}
+            {#if averageLocation}
+              <AverageMarker {map} data={averageLocation} />
+            {/if}
+          {/if}
+        </div>
+        <div>
+          {#if averageLocation}
+            <button
+              type="button"
+              class="btn relative mb-2 flex w-[calc(100%_+_82px)] w-full justify-between pr-0"
+              onclick={() => onGoToAverageLocation(averageLocation)}
+            >
+              <span>
+                <strong>Average Location:</strong>
+                <em>
+                  {roundLatLng(averageLocation).lat},
+                  {roundLatLng(averageLocation).lng}
+                </em>
+              </span>
+              <span class="flex w-[66px] justify-center">
+                <Icon name="avg-marker" />
+              </span>
+            </button>
+            <button
+              type="button"
+              class="btn relative mb-2 flex w-[calc(100%_+_82px)] w-full justify-between pr-0"
+              onclick={() => onViewAllLocations(averageLocation)}
+            >
+              <span>View all locations</span>
+              <span class="flex w-[66px] justify-center">
+                <Icon name="all-locations" />
+              </span>
+            </button>
+          {/if}
+          {#if hasGeolocation}
+            <button
+              class="btn relative mb-2 flex w-[calc(100%_+_82px)] w-full justify-between pr-0"
+              onclick={onUseMyLocation}
+            >
+              <span>Use my location</span>
+              <span class="flex w-[66px] justify-center">
+                <Icon name="target-marker" />
+              </span>
+            </button>
+          {/if}
+          {#if locationsData.length > 0}
+            <button
+              type="button"
+              class="btn btn-error w-full"
+              onclick={clearAllLocations}
+            >
+              Clear all locations
+            </button>
+          {/if}
+        </div>
       </div>
     </div>
     <div class="h-full w-full" bind:this={mapContainer}></div>

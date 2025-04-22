@@ -16,3 +16,54 @@
   left: -9999px;
   top: -9999px;
 }
+
+:root {
+  --ico-1-fill: #FFF;
+  --ico-2-fill: #666;
+}
+
+.ico-1 {
+  fill: var(--ico-1-fill);
+}
+.ico-2 {
+  fill: var(--ico-2-fill);
+  stroke: 1px solid #FFF;
+}
+.op-6 {
+  opacity: 0.6;
+}
+.op-5 {
+  opacity: 0.5;
+}
+
+.marker {
+  /* we want to adjust the marker position however the map positions it so use a
+  negative margin to offset the markers so the bottom of the marker is in the
+  position set by mapbox. */
+  margin-top: -20px;
+}
+
+.add-marker .icon use {
+  --ico-2-fill: #4caf50;
+}
+
+.tooltip {
+  width: max-content;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #222;
+  color: white;
+  font-weight: bold;
+  padding: 5px;
+  border-radius: 4px;
+  font-size: 90%;
+}
+
+.tooltip-arrow {
+  position: absolute;
+  background: #222;
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+}

@@ -1,17 +1,10 @@
-export interface ISerializedLocationData {
-  lat: number;
-  lng: number;
-  label: string;
-}
-export interface ILocationData extends ISerializedLocationData {
-  id: string;
-}
-export type LocationsData = Array<ILocationData>;
-
 // 15.23456, -30.67890
 // 47.610335, -122.542584 <- Bainbridge Island
 // 46.824555, -117.206764 <- Pullman
 // 42.349849, -71.163558 <- Boston
+
+import type { ILocation } from './types';
+
 // -43.625149, 172.652438 <- Christchurch
 const decimalPattern = /(-?)(\d+\.\d+),\s*(-?)(\d+\.\d+)/i;
 // 40°45'11"N, 73°58'59"W
@@ -21,14 +14,12 @@ const degreesMinSecPattern =
 const degreesMinDecimalPattern =
   /(\d+)°\s*(\d+\.\d+)'\s*([NS]),?\s*(\d+)°\s*(\d+\.\d+)'\s*([EW])/i;
 
-export const parseLongLat = (
-  val: string,
-): { long: number; lat: number } | null => {
+export const parseLngLat = (val: string): ILocation | null => {
   const decimalMatch = val.match(decimalPattern);
   if (decimalMatch) {
     const lat = parseFloat(`${decimalMatch[1]}${decimalMatch[2]}`);
-    const long = parseFloat(`${decimalMatch[3]}${decimalMatch[4]}`);
-    return { long, lat };
+    const lng = parseFloat(`${decimalMatch[3]}${decimalMatch[4]}`);
+    return { lng, lat };
   }
 
   const degreesMinSecMatch = val.match(degreesMinSecPattern);
@@ -54,11 +45,11 @@ export const parseLongLat = (
     const lat =
       (latDeg + latMin / 60 + latSec / 3600) *
       (latDir.toLowerCase() === 'n' ? 1 : -1);
-    const long =
+    const lng =
       (lonDeg + lonMin / 60 + lonSec / 3600) *
       (lonDir.toLowerCase() === 'e' ? 1 : -1);
-    console.log(`deg/min/sec lat: ${lat}, long: ${long}`);
-    return { long, lat };
+    console.log(`deg/min/sec lat: ${lat}, lng: ${lng}`);
+    return { lng, lat };
   }
 
   const degreesMinDecimalMatch = val.match(degreesMinDecimalPattern);
@@ -73,11 +64,23 @@ export const parseLongLat = (
 
     const lat =
       (latDeg + latMin / 60) * (latDir.toLowerCase() === 'n' ? 1 : -1);
-    const long =
+    const lng =
       (lonDeg + lonMin / 60) * (lonDir.toLowerCase() === 'e' ? 1 : -1);
-    console.log(`deg/min lat: ${lat}, long: ${long}`);
-    return { long, lat };
+    console.log(`deg/min lat: ${lat}, lng: ${lng}`);
+    return { lng, lat };
   }
 
   return null;
+};
+
+/**
+ * Rounds the latitude and longitude to 5 decimal places for display.
+ *
+ * @param {ILocation} location - The location object containing lat and lng.
+ * @returns {ILocation} - A new location object with rounded lat and lng.
+ */
+export const roundLatLng = (location: ILocation): ILocation => {
+  const lat = parseFloat(location.lat.toFixed(5));
+  const lng = parseFloat(location.lng.toFixed(5));
+  return { lat, lng };
 };
