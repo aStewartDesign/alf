@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
   import mapboxgl, { type Map, type Marker } from 'mapbox-gl';
-  import { type ILocationData } from '$lib/types';
+  import { type ILocation, type ILocationData } from '$lib/types';
   import Icon from '$lib/components/icon.svelte';
   import Tooltip from './tooltip.svelte';
   import { roundLatLng } from '$lib/utilities';
@@ -99,29 +99,33 @@
     saveLabel(location.label);
     location.isEditingLabel = false;
   };
+
+  const goToLocation = (coords: ILocation) => {
+    map.setCenter(coords);
+  };
 </script>
 
 <div class="offscreen">
   {#snippet tooltipSnippet()}
     <span>{location.label}</span>
-    <button class="btn btn-link btn-xs" onclick={() => deleteLocation(data.id)}>
-      delete
+    <button class="btn btn-xs" onclick={() => deleteLocation(data.id)}>
+      <Icon name="trash" />
     </button>
   {/snippet}
-  <span class="current-location-marker marker" bind:this={elLocationMarker}>
+  <span class="location-marker marker" bind:this={elLocationMarker}>
     <Tooltip {tooltipSnippet} />
     <Icon name="marker" />
   </span>
 </div>
 
 <div
-  class="mb-2 flex flex-row content-center items-center rounded-md bg-slate-700 p-2"
+  class="mb-2 flex flex-row content-center items-center rounded-md bg-slate-700"
   onmouseenter={onMouseEnter}
   onmouseleave={onMouseLeave}
   role="listitem"
 >
   {#if location.isEditingLabel}
-    <div class="join w-full">
+    <div class="join m-2 w-full">
       <input
         type="text"
         class="input join-item input-bordered grow"
@@ -132,9 +136,12 @@
       <button class="btn join-item" onclick={handleLabelSave}> Save </button>
     </div>
   {:else}
-    <p class="flex-grow text-base font-bold">
+    <button
+      class="flex-grow p-2 text-left text-base font-bold"
+      onclick={() => goToLocation(location.coords)}
+    >
       {location.label}
-    </p>
+    </button>
     <div class="dropdown">
       <button
         tabindex="0"

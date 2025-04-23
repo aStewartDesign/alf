@@ -27,7 +27,6 @@
 }
 .ico-2 {
   fill: var(--ico-2-fill);
-  stroke: 1px solid #FFF;
 }
 .op-6 {
   opacity: 0.6;
@@ -47,6 +46,14 @@
   --ico-2-fill: #4caf50;
 }
 
+.current-location-marker .icon use {
+  --ico-2-fill: #09F;
+}
+
+.average-marker .icon use {
+  --ico-2-fill: #00159f;
+}
+
 .tooltip {
   width: max-content;
   position: absolute;
@@ -58,6 +65,7 @@
   padding: 5px;
   border-radius: 4px;
   font-size: 90%;
+  align-items: center;
 }
 
 .tooltip-arrow {

@@ -1,14 +1,46 @@
 <script lang="ts">
   import Icon from '$lib/components/icon.svelte';
-  import type { ILocationData } from '$lib/types';
+  import mapboxgl, { type Map, type Marker } from 'mapbox-gl';
+  import type { ILocation } from '$lib/types';
+  import { onMount, onDestroy } from 'svelte';
+  import Tooltip from './tooltip.svelte';
 
   interface Props {
-    data: ILocationData;
+    data: ILocation;
+    map: Map;
+    onClick: (coords: ILocation) => void;
   }
 
-  const { data }: Props = $props();
+  const { data, map, onClick }: Props = $props();
+
+  let elMarker: HTMLSpanElement;
+  let marker: Marker | null = null;
+  const coords = { ...data };
+
+  onMount(() => {
+    marker = new mapboxgl.Marker({
+      element: elMarker,
+    })
+      .setLngLat(data)
+      .addTo(map);
+    marker.getElement().focus();
+  });
+
+  onDestroy(() => {
+    if (marker) {
+      marker.remove();
+    }
+  });
 </script>
 
-<span class="current-location-marker marker" data-id={data.id}>
-  <Icon name="target-marker" />
-</span>
+<div class="offscreen">
+  <button
+    type="button"
+    class="current-location-marker marker"
+    onclick={() => onClick(coords)}
+    bind:this={elMarker}
+  >
+    <Tooltip text="Tap to add your location" />
+    <Icon name="target-marker" />
+  </button>
+</div>

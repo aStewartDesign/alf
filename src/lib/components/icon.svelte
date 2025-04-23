@@ -6,7 +6,9 @@
     | 'target-marker'
     | 'all-locations'
     | 'hamburger'
-    | 'dots-stacked';
+    | 'dots-stacked'
+    | 'pencil'
+    | 'trash';
 
   interface Props {
     name: IconName;
@@ -23,6 +25,12 @@
       break;
     case 'dots-stacked':
       dimensions = { width: 24, height: 24 };
+      break;
+    case 'pencil':
+      dimensions = { width: 20, height: 20 };
+      break;
+    case 'trash':
+      dimensions = { width: 18, height: 20 };
       break;
     default:
       dimensions = { width: 28, height: 40 };

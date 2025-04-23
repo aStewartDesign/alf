@@ -17,6 +17,7 @@
   import type { IAverageLocation } from '$lib/types';
   import AverageMarker from '$lib/components/average-marker.svelte';
   import AddMarker from '$lib/components/add-marker.svelte';
+  import CurrentLocationMarker from '$lib/components/current-location-marker.svelte';
 
   const queryParamDataKey = 'd';
 
@@ -55,6 +56,8 @@
   let isValidInput = $state(false);
   let isDrawerOpen = $state(false);
   let addLocationCoords: ILocation | null = $state(null);
+  let currentLocationCoords: ILocation | null = $state(null);
+  const defaultZoomLevel = 12;
 
   const onDocumentClick = (e: MouseEvent) => {
     let id = (e.target as Element)
@@ -142,7 +145,11 @@
     let target = e.originalEvent.target as Element;
     // Only add the add location marker if the click did not happen on a
     // location marker.
-    if (!target.closest('.add-marker, .location-marker, .average-marker')) {
+    if (
+      !target.closest(
+        '.add-marker, .location-marker, .average-marker, .current-location-marker',
+      )
+    ) {
       if (addLocationCoords) {
         addLocationCoords = null;
       } else {
@@ -156,14 +163,12 @@
     }
   };
 
-  const addLocation = (coords: ILocation) => {
-    locationsData.push({ ...coords, label: '', id: uuid() });
-    console.log('addLocation locationData:', [...locationsData]);
+  const addLocation = (coords: ILocation, label?: string) => {
+    locationsData.push({ ...coords, label: label || '', id: uuid() });
     persistToQueryString();
   };
 
   const onAddMarkerClick = (coords: ILocation) => {
-    console.log('onAddMarkerClick', coords);
     addLocation(coords);
     addLocationCoords = null;
   };
@@ -171,9 +176,6 @@
   const removeLocation = (id: string) => {
     let idx = locationsData.findIndex((d) => d.id === id);
     locationsData.splice(idx, 1);
-    console.log(`removeLocation id: "${id}" idx: ${idx} locationData:`, [
-      ...locationsData,
-    ]);
     persistToQueryString();
   };
 
@@ -192,13 +194,16 @@
 
   const onUseMyLocation = () => {
     window.navigator.geolocation.getCurrentPosition((position) => {
-      const coords = {
-        lng: position.coords.longitude,
-        lat: position.coords.latitude,
-      };
-      addLocation(coords);
-      map?.setCenter(coords);
-      map?.setZoom(9);
+      if (currentLocationCoords) {
+        currentLocationCoords = null;
+      } else {
+        currentLocationCoords = {
+          lng: position.coords.longitude,
+          lat: position.coords.latitude,
+        };
+        map?.setCenter(currentLocationCoords);
+        map?.setZoom(defaultZoomLevel);
+      }
     });
   };
 
@@ -215,7 +220,7 @@
   const onGoToAverageLocation = (data: IAverageLocation) => {
     if (map) {
       map.setCenter(data);
-      map.setZoom(9);
+      map.setZoom(defaultZoomLevel);
     }
   };
 
@@ -232,6 +237,11 @@
     }
   };
 
+  const onSetCurrentLocation = (coords: ILocation) => {
+    currentLocationCoords = null;
+    addLocation(coords, 'My location');
+  };
+
   const persistToQueryString = () => {
     goto(`?${queryParamDataKey}=${encodeParam(locationsData)}`, {
       replaceState: true,
@@ -245,13 +255,14 @@
       class={[
         'shadow-md, absolute z-[1] h-full bg-base-100',
         'w-[80vw] p-4 sm:w-[60vw] md:w-[50vw] lg:w-[30vw] 2xl:w-[20vw]',
+        'transition-left duration-200 ease-in-out',
         isDrawerOpen
           ? 'left-0'
           : 'left-[-80vw] sm:left-[-60vw] md:left-[-50vw] lg:left-[-30vw] 2xl:left-[-20vw]',
       ]}
     >
       <button
-        class="btn absolute right-[-66px] mt-4 rounded-l-none"
+        class="btn absolute right-[-65px] mt-4 rounded-l-none"
         onclick={() => (isDrawerOpen = !isDrawerOpen)}
         aria-label="Toggle menu"
       >
@@ -294,13 +305,20 @@
             {#if averageLocation}
               <AverageMarker {map} data={averageLocation} />
             {/if}
+            {#if currentLocationCoords}
+              <CurrentLocationMarker
+                {map}
+                data={currentLocationCoords}
+                onClick={onSetCurrentLocation}
+              />
+            {/if}
           {/if}
         </div>
-        <div>
+        <div class="mb-6">
           {#if averageLocation}
             <button
               type="button"
-              class="btn relative mb-2 flex w-[calc(100%_+_82px)] w-full justify-between pr-0"
+              class="btn relative mb-2 flex w-[calc(100%_+_82px)] justify-between pr-0"
               onclick={() => onGoToAverageLocation(averageLocation)}
             >
               <span>
@@ -316,7 +334,7 @@
             </button>
             <button
               type="button"
-              class="btn relative mb-2 flex w-[calc(100%_+_82px)] w-full justify-between pr-0"
+              class="btn relative mb-2 flex w-[calc(100%_+_82px)] justify-between pr-0"
               onclick={() => onViewAllLocations(averageLocation)}
             >
               <span>View all locations</span>
@@ -327,7 +345,10 @@
           {/if}
           {#if hasGeolocation}
             <button
-              class="btn relative mb-2 flex w-[calc(100%_+_82px)] w-full justify-between pr-0"
+              class={[
+                'btn relative mb-2 flex w-[calc(100%_+_82px)] justify-between pr-0',
+                currentLocationCoords ? 'current-location-marker' : '',
+              ]}
               onclick={onUseMyLocation}
             >
               <span>Use my location</span>

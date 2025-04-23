@@ -45,7 +45,7 @@
       <p><strong>AverageLocation</strong></p>
       <p><em>{displayLngLat.lat}, {displayLngLat.lng}</em></p>
     {/snippet}
-    <Tooltip {tooltipSnippet} />
+    <Tooltip className="flex-col" {tooltipSnippet} />
     <Icon name="avg-marker" />
   </span>
 </div>

@@ -7,9 +7,10 @@
     text?: string;
     tooltipSnippet?: Snippet<[]>;
     targetSelector?: string;
+    className?: string;
   }
 
-  const { text, tooltipSnippet, targetSelector }: Props = $props();
+  const { text, tooltipSnippet, targetSelector, className }: Props = $props();
   const id = uuid();
   let elTooltip: HTMLDivElement;
   let elArrow: HTMLDivElement;
@@ -57,7 +58,9 @@
     elTarget.setAttribute('aria-describedby', id);
 
     const showTooltip = () => {
-      elTooltip.style.display = 'block';
+      if (elTooltip) {
+        elTooltip.style.display = 'flex';
+      }
       update(elTarget);
     };
     const hideTooltip = () => {
@@ -80,7 +83,7 @@
   });
 </script>
 
-<div role="tooltip" class="tooltip" {id} bind:this={elTooltip}>
+<div role="tooltip" class={['tooltip', className]} {id} bind:this={elTooltip}>
   {#if text}
     {text}
   {/if}
