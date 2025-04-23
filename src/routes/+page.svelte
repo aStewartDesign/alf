@@ -193,18 +193,18 @@
   };
 
   const onUseMyLocation = () => {
-    window.navigator.geolocation.getCurrentPosition((position) => {
-      if (currentLocationCoords) {
-        currentLocationCoords = null;
-      } else {
+    if (currentLocationCoords) {
+      currentLocationCoords = null;
+    } else {
+      window.navigator.geolocation.getCurrentPosition((position) => {
         currentLocationCoords = {
           lng: position.coords.longitude,
           lat: position.coords.latitude,
         };
         map?.setCenter(currentLocationCoords);
         map?.setZoom(defaultZoomLevel);
-      }
-    });
+      });
+    }
   };
 
   const onViewAllLocations = (data: IAverageLocation) => {
