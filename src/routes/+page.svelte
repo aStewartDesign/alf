@@ -96,6 +96,10 @@
     hasGeolocation = 'geolocation' in window.navigator;
 
     document.addEventListener('click', onDocumentClick);
+
+    if (averageLocation) {
+      onViewAllLocations(averageLocation);
+    }
   });
 
   onDestroy(() => {
