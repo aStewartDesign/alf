@@ -18,6 +18,7 @@
   import AverageMarker from '$lib/components/average-marker.svelte';
   import AddMarker from '$lib/components/add-marker.svelte';
   import CurrentLocationMarker from '$lib/components/current-location-marker.svelte';
+  import type { PageProps } from './$types';
 
   const queryParamDataKey = 'd';
 
@@ -76,6 +77,8 @@
     }
   };
 
+  let { data }: PageProps = $props();
+
   onMount(() => {
     const urlParams = new URLSearchParams(window.location.search);
     locationsData.splice(
@@ -83,10 +86,10 @@
       locationsData.length,
       ...decodeParam(urlParams.get(queryParamDataKey) || ''),
     );
+    console.log(`alf here! mbox? ${Boolean(data.accessToken)}`);
     map = new mapboxgl.Map({
       container: mapContainer,
-      accessToken:
-        'pk.eyJ1IjoiYXN0ZXdhcnRtYXBzIiwiYSI6ImNtNThqemZvdTNzeGQyaW9oZHNndmhtNnEifQ.2ogFryXUJhplTnN9tj82Sw',
+      accessToken: data.accessToken,
       style: 'mapbox://styles/mapbox/streets-v11',
       center: [-74.5, 40],
       zoom: 9,
