@@ -48,7 +48,6 @@ export const parseLngLat = (val: string): ILocation | null => {
     const lng =
       (lonDeg + lonMin / 60 + lonSec / 3600) *
       (lonDir.toLowerCase() === 'e' ? 1 : -1);
-    console.log(`deg/min/sec lat: ${lat}, lng: ${lng}`);
     return { lng, lat };
   }
 
@@ -66,7 +65,6 @@ export const parseLngLat = (val: string): ILocation | null => {
       (latDeg + latMin / 60) * (latDir.toLowerCase() === 'n' ? 1 : -1);
     const lng =
       (lonDeg + lonMin / 60) * (lonDir.toLowerCase() === 'e' ? 1 : -1);
-    console.log(`deg/min lat: ${lat}, lng: ${lng}`);
     return { lng, lat };
   }
 

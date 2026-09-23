@@ -86,7 +86,6 @@
       locationsData.length,
       ...decodeParam(urlParams.get(queryParamDataKey) || ''),
     );
-    console.log(`alf here! mbox? ${Boolean(data.accessToken)}`);
     map = new mapboxgl.Map({
       container: mapContainer,
       accessToken: data.accessToken,
