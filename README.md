@@ -1,38 +1,42 @@
-# sv
+# Average Location Finder
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Drop pins on a map and find the geographic midpoint of all of them.
 
-## Creating a project
+**Live app:** [averagelocation.com](https://www.averagelocation.com)
 
-If you're seeing this, you've probably already done this step. Congrats!
+![Screenshot of Average Location Finder showing several pins and their calculated midpoint](./docs/screenshot.png)
+
+## Background
+
+As my family moved apart to different locations we often discussed our "average family location", the average point geographically from all our locations. We manually calculated the point a couple of times but I eventually was inspired to create a web tool to make this task easier. So on a gray and rainy weekend I put together Average Location Finder (ALF).
+
+## Features
+
+- Tap or click the map to place any number of pins
+- The midpoint updates instantly as you add, move, or remove pins
+- Responsive layout that works on every device
+
+## Tech stack
+
+- [SvelteKit](https://svelte.dev/docs/kit/introduction)
+- [MapBox](https://www.mapbox.com)
+- Cloudflare [workers](https://www.cloudflare.com/products/workers) and [pages](https://www.cloudflare.com/products/pages)
+
+## Running locally
+
+Requires [Node.js](https://nodejs.org) and [pnpm](https://pnpm.io).
 
 ```bash
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
+pnpm install
+pnpm run dev
 
 # or start the server and open the app in a new browser tab
-npm run dev -- --open
+pnpm run dev -- --open
 ```
 
 ## Building
 
-To create a production version of your app:
-
 ```bash
-npm run build
+pnpm run build
+pnpm run preview   # preview the production build locally
 ```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
